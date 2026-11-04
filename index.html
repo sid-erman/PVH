@@ -91,8 +91,9 @@
       <!-- Admin Dashboard View -->
       <div id="controls-screen" class="hidden space-y-4">
         <div class="flex justify-between items-center">
-          <h3 class="font-bold text-lg">Admin Verification</h3>
-          <button onclick="closeAdminModal()" class="text-gray-400 text-xl">✕</button>
+        <h3 class="font-bold text-lg">Admin Verification</h3>
+        <button onclick="closeAdminModal()" class="text-gray-400 text-xl">✕</button>
+
         </div>
 
         <!-- Camera Scanner Area -->
@@ -184,12 +185,27 @@
 
     function openAdminModal() { document.getElementById("admin-modal").classList.remove("hidden"); }
     
-    function closeAdminModal() {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().catch(() => {});
+    async function closeAdminModal() {
+  if (html5QrcodeScanner) {
+    try {
+      // Check if scanner is currently running before attempting to stop
+      if (html5QrcodeScanner.isScanning) {
+        await html5QrcodeScanner.stop();
       }
-      document.getElementById("admin-modal").classList.add("hidden");
+      html5QrcodeScanner.clear();
+    } catch (err) {
+      console.log("Scanner cleanup error:", err);
     }
+    html5QrcodeScanner = null;
+  }
+  
+  // Reset scan result text
+  const resultDiv = document.getElementById("scan-result");
+  if (resultDiv) resultDiv.innerHTML = "";
+
+  // Hide the modal window
+  document.getElementById("admin-modal").classList.add("hidden");
+}
 
     async function verifyPin() {
       const pin = document.getElementById("admin-pin").value;
