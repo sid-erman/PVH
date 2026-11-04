@@ -17,7 +17,7 @@
   <main id="main-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
     
     <!-- Admin Settings Gear -->
-    <button onclick="openAdminModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white p-2 text-xl">
+    <button onclick="openAdminModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white p-2 text-xl z-10">
       ⚙️
     </button>
 
@@ -61,6 +61,13 @@
       </button>
     </form>
 
+    <!-- CLOSED MESSAGE (Shows if past 4:00 PM) -->
+    <div id="closed-msg" class="hidden py-8 text-center">
+      <div class="text-5xl mb-4">🚫</div>
+      <h3 class="text-xl font-bold text-red-400">Booking is Closed</h3>
+      <p class="text-xs text-gray-400 mt-2">It is past 4:00 PM. Please check back tomorrow morning to book your next meal.</p>
+    </div>
+
     <!-- GENERATED TICKET DISPLAY -->
     <div id="ticket-display" class="hidden flex flex-col items-center py-4">
       <div class="text-emerald-400 font-bold text-sm mb-1">✓ Booking Confirmed</div>
@@ -91,9 +98,8 @@
       <!-- Admin Dashboard View -->
       <div id="controls-screen" class="hidden space-y-4">
         <div class="flex justify-between items-center">
-        <h3 class="font-bold text-lg">Admin Verification</h3>
-        <button onclick="closeAdminModal()" class="text-gray-400 text-xl">✕</button>
-
+          <h3 class="font-bold text-lg">Admin Verification</h3>
+          <button onclick="closeAdminModal()" class="text-gray-400 text-xl font-bold">✕</button>
         </div>
 
         <!-- Camera Scanner Area -->
@@ -132,21 +138,41 @@
           </div>
         </div>
 
-        <button onclick="closeAdminModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-semibold">Close</button>
+        <button onclick="closeAdminModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-semibold">Close Panel</button>
       </div>
 
     </div>
   </div>
 
   <script>
+    // --- REPLACE WITH YOUR SUPABASE CREDENTIALS ---
     const SUPABASE_URL = "https://hkmlqympnmbxhsbnzlet.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ac1YInd8xN-k3FwZ_HDrPw_px_0qa5Z";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let html5QrcodeScanner = null;
 
+    // --- CHECK FOR 4:00 PM CUTOFF ON LOAD ---
+    function enforceCutoff() {
+      const currentHour = new Date().getHours();
+      if (currentHour >= 16) { // 16 = 4:00 PM
+        document.getElementById("lunch-form").classList.add("hidden");
+        document.getElementById("closed-msg").classList.remove("hidden");
+      }
+    }
+    
+    // Run cutoff check immediately
+    enforceCutoff();
+
     async function submitOrder(e) {
       e.preventDefault();
+
+      // Double check time before submitting just in case
+      if (new Date().getHours() >= 16) {
+        enforceCutoff();
+        return;
+      }
+
       const name = document.getElementById("user-name").value.trim();
       const choice = document.querySelector('input[name="meal-choice"]:checked')?.value;
 
@@ -185,31 +211,29 @@
 
     function openAdminModal() { document.getElementById("admin-modal").classList.remove("hidden"); }
     
+    // --- UPDATED CLOSE MODAL SCRIPT TO FIX CAMERA GLITCH ---
     async function closeAdminModal() {
-  if (html5QrcodeScanner) {
-    try {
-      // Check if scanner is currently running before attempting to stop
-      if (html5QrcodeScanner.isScanning) {
-        await html5QrcodeScanner.stop();
+      if (html5QrcodeScanner) {
+        try {
+          if (html5QrcodeScanner.isScanning) {
+            await html5QrcodeScanner.stop();
+          }
+          html5QrcodeScanner.clear();
+        } catch (err) {
+          console.log("Scanner cleanup error:", err);
+        }
+        html5QrcodeScanner = null;
       }
-      html5QrcodeScanner.clear();
-    } catch (err) {
-      console.log("Scanner cleanup error:", err);
+      
+      const resultDiv = document.getElementById("scan-result");
+      if (resultDiv) resultDiv.innerHTML = "";
+      
+      document.getElementById("admin-modal").classList.add("hidden");
     }
-    html5QrcodeScanner = null;
-  }
-  
-  // Reset scan result text
-  const resultDiv = document.getElementById("scan-result");
-  if (resultDiv) resultDiv.innerHTML = "";
-
-  // Hide the modal window
-  document.getElementById("admin-modal").classList.add("hidden");
-}
 
     async function verifyPin() {
       const pin = document.getElementById("admin-pin").value;
-      if (pin === "1234") {
+      if (pin === "1234") { // Your Admin PIN
         document.getElementById("pin-screen").classList.add("hidden");
         document.getElementById("controls-screen").classList.remove("hidden");
         await loadAdminData();
@@ -227,8 +251,10 @@
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 200, height: 200 } },
         async (decodedText) => {
-          // Process scanned Ticket ID
-          html5QrcodeScanner.stop();
+          // Stop camera once scanned
+          if (html5QrcodeScanner.isScanning) {
+            await html5QrcodeScanner.stop();
+          }
           resultDiv.innerHTML = `<span class="text-amber-400">Verifying Ticket...</span>`;
 
           const { data, error } = await supabaseClient
@@ -239,7 +265,7 @@
 
           if (data) {
             if (data.verified) {
-              resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY VERIFIED / CLAIMED!<br>${data.person_name} (${data.menu_choice})</span>`;
+              resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY CLAIMED!<br>${data.person_name} (${data.menu_choice})</span>`;
             } else {
               // Mark ticket as verified
               await supabaseClient.from('lunch_tickets').update({ verified: true }).eq('id', data.id);
@@ -253,17 +279,29 @@
         },
         (errorMessage) => {}
       ).catch(err => {
-        resultDiv.innerHTML = `<span class="text-red-400">Camera permission denied or unavailable.</span>`;
+        resultDiv.innerHTML = `<span class="text-red-400">Camera permission denied.</span>`;
       });
     }
 
     async function loadAdminData() {
+      // --- AUTO-DELETE OLD DATA TO REFRESH EVERY DAY ---
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0); // Sets time to midnight today
+      
+      // Deletes any ticket created before midnight today
+      await supabaseClient.from('lunch_tickets').delete().lt('created_at', startOfToday.toISOString());
+
+      // Fetch only today's remaining tickets
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
         let veg = 0, egg = 0, nonVeg = 0;
         const nameList = document.getElementById("name-list");
         nameList.innerHTML = "";
+
+        if (data.length === 0) {
+          nameList.innerHTML = `<div class="text-gray-500 text-center py-2">No bookings yet today.</div>`;
+        }
 
         data.forEach(item => {
           if (item.menu_choice === "Veg") veg++;
