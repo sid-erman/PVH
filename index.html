@@ -6,14 +6,12 @@
   <title>Lunch Ticket & Scanner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- QR Code Generator & Scanner Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4 font-sans">
 
-  <!-- PUBLIC USER SUBMISSION CARD -->
   <main id="main-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
     
     <!-- Admin Settings Gear -->
@@ -62,21 +60,18 @@
     </form>
 
     <!-- CLOSED MESSAGE (Shows if past 4:00 PM) -->
-    <div id="closed-msg" class="hidden py-8 text-center">
+    <div id="closed-msg" style="display: none;" class="py-8 text-center">
       <div class="text-5xl mb-4">🚫</div>
       <h3 class="text-xl font-bold text-red-400">Booking is Closed</h3>
       <p class="text-xs text-gray-400 mt-2">It is past 4:00 PM. Please check back tomorrow morning to book your next meal.</p>
     </div>
 
     <!-- GENERATED TICKET DISPLAY -->
-    <div id="ticket-display" class="hidden flex flex-col items-center py-4">
+    <div id="ticket-display" style="display: none;" class="flex flex-col items-center py-4">
       <div class="text-emerald-400 font-bold text-sm mb-1">✓ Booking Confirmed</div>
       <h2 id="ticket-name" class="text-xl font-black text-white">--</h2>
       <p id="ticket-meal" class="text-xs text-indigo-400 font-bold mb-4">--</p>
-
-      <!-- QR Code Output Container -->
       <div class="bg-white p-4 rounded-2xl shadow-xl mb-4" id="qrcode"></div>
-
       <p class="text-[11px] text-gray-400 text-center max-w-[220px]">
         Screenshot this QR code and show it at the lunch counter for verification.
       </p>
@@ -87,7 +82,6 @@
   <div id="admin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full max-h-[90vh] flex flex-col overflow-y-auto">
       
-      <!-- PIN Screen -->
       <div id="pin-screen">
         <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
         <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
@@ -95,14 +89,12 @@
         <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Admin Panel</button>
       </div>
 
-      <!-- Admin Dashboard View -->
       <div id="controls-screen" class="hidden space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="font-bold text-lg">Admin Verification</h3>
           <button onclick="closeAdminModal()" class="text-gray-400 text-xl font-bold">✕</button>
         </div>
 
-        <!-- Camera Scanner Area -->
         <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
           <button id="start-scan-btn" onclick="startScanner()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mb-2">
             📷 Open Camera Scanner
@@ -111,7 +103,6 @@
           <div id="scan-result" class="mt-2 text-xs text-center font-bold"></div>
         </div>
 
-        <!-- Summary Tallies -->
         <div class="grid grid-cols-3 gap-2 text-center">
           <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
             <div class="text-[10px] text-gray-400">Veg</div>
@@ -127,7 +118,6 @@
           </div>
         </div>
 
-        <!-- Order Roster -->
         <div>
           <div class="flex justify-between items-center mb-2">
             <span class="text-xs text-gray-400 font-semibold">Today's Bookings</span>
@@ -140,36 +130,42 @@
 
         <button onclick="closeAdminModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-semibold">Close Panel</button>
       </div>
-
     </div>
   </div>
 
   <script>
-    // --- REPLACE WITH YOUR SUPABASE CREDENTIALS ---
     const SUPABASE_URL = "https://hkmlqympnmbxhsbnzlet.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ac1YInd8xN-k3FwZ_HDrPw_px_0qa5Z";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let html5QrcodeScanner = null;
 
-    // --- CHECK FOR 4:00 PM CUTOFF ON LOAD ---
+    // --- BULLETPROOF 4:00 PM CUTOFF ---
     function enforceCutoff() {
       const currentHour = new Date().getHours();
-      if (currentHour >= 16) { // 16 = 4:00 PM
-        document.getElementById("lunch-form").classList.add("hidden");
-        document.getElementById("closed-msg").classList.remove("hidden");
+      // 16 is 4:00 PM. From 16:00 to 23:59, the form is locked.
+      if (currentHour >= 16) { 
+        document.getElementById("lunch-form").style.display = "none"; 
+        document.getElementById("closed-msg").style.display = "block"; 
+        
+        // Physically disable the submit button
+        const btn = document.getElementById("submit-btn");
+        if(btn) btn.disabled = true;
+        
+        return true; 
       }
+      return false;
     }
     
-    // Run cutoff check immediately
+    // Run cutoff check immediately when page loads
     enforceCutoff();
 
     async function submitOrder(e) {
       e.preventDefault();
 
-      // Double check time before submitting just in case
-      if (new Date().getHours() >= 16) {
-        enforceCutoff();
+      // Double check time before submitting (in case they left the app open)
+      if (enforceCutoff()) {
+        alert("Booking closed! It is past 4:00 PM.");
         return;
       }
 
@@ -189,12 +185,11 @@
         .single();
 
       if (!error && data) {
-        document.getElementById("lunch-form").classList.add("hidden");
-        document.getElementById("ticket-display").classList.remove("hidden");
+        document.getElementById("lunch-form").style.display = "none";
+        document.getElementById("ticket-display").style.display = "flex";
         document.getElementById("ticket-name").textContent = data.person_name;
         document.getElementById("ticket-meal").textContent = data.menu_choice;
 
-        // Render user's QR Ticket containing their record ID
         new QRCode(document.getElementById("qrcode"), {
           text: data.id,
           width: 160,
@@ -211,7 +206,6 @@
 
     function openAdminModal() { document.getElementById("admin-modal").classList.remove("hidden"); }
     
-    // --- UPDATED CLOSE MODAL SCRIPT TO FIX CAMERA GLITCH ---
     async function closeAdminModal() {
       if (html5QrcodeScanner) {
         try {
@@ -233,7 +227,7 @@
 
     async function verifyPin() {
       const pin = document.getElementById("admin-pin").value;
-      if (pin === "1234") { // Your Admin PIN
+      if (pin === "1234") { 
         document.getElementById("pin-screen").classList.add("hidden");
         document.getElementById("controls-screen").classList.remove("hidden");
         await loadAdminData();
@@ -251,7 +245,6 @@
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 200, height: 200 } },
         async (decodedText) => {
-          // Stop camera once scanned
           if (html5QrcodeScanner.isScanning) {
             await html5QrcodeScanner.stop();
           }
@@ -267,7 +260,6 @@
             if (data.verified) {
               resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY CLAIMED!<br>${data.person_name} (${data.menu_choice})</span>`;
             } else {
-              // Mark ticket as verified
               await supabaseClient.from('lunch_tickets').update({ verified: true }).eq('id', data.id);
               resultDiv.innerHTML = `<span class="text-emerald-400">✅ VALID TICKET!<br>${data.person_name} - ${data.menu_choice}</span>`;
               confetti({ particleCount: 40, spread: 50 });
@@ -284,14 +276,10 @@
     }
 
     async function loadAdminData() {
-      // --- AUTO-DELETE OLD DATA TO REFRESH EVERY DAY ---
       const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0); // Sets time to midnight today
+      startOfToday.setHours(0, 0, 0, 0); 
       
-      // Deletes any ticket created before midnight today
       await supabaseClient.from('lunch_tickets').delete().lt('created_at', startOfToday.toISOString());
-
-      // Fetch only today's remaining tickets
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
