@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Office Lunch Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+
+  <!-- PUBLIC DASHBOARD -->
+  <main class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
+    
+    <!-- Admin Settings Gear -->
+    <button onclick="openAdminModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white p-2 text-xl">
+      ⚙️
+    </button>
+
+    <div class="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3">
+      DAILY LUNCH STATUS
+    </div>
+    <h1 class="text-2xl font-black mb-6">Tomorrow's Lunch</h1>
+
+    <!-- Status Card -->
+    <div id="status-card" class="py-3 px-4 rounded-2xl font-bold text-sm mb-6 border bg-gray-800 text-gray-400 border-gray-700">
+      Fetching status...
+    </div>
+
+    <!-- Menu Type -->
+    <div class="bg-gray-950 p-5 rounded-2xl border border-gray-800 mb-6">
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Today's Menu Offering</p>
+      <div id="menu-type" class="text-3xl font-black text-emerald-400">--</div>
+    </div>
+
+    <!-- 4 PM Cutoff Warning -->
+    <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-300 text-xs text-left flex items-center space-x-3">
+      <span class="text-lg">⏰</span>
+      <div>
+        <div class="font-bold">Strict 4:00 PM Cutoff</div>
+        <div class="text-[11px] text-amber-300/70">Must book prior one day before 4 PM!</div>
+      </div>
+    </div>
+
+    <p id="updated-at" class="text-[10px] text-gray-600 mt-4">Last synced: Never</p>
+  </main>
+
+  <!-- ADMIN CONTROL MODAL -->
+  <div id="admin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full">
+      
+      <!-- PIN Screen -->
+      <div id="pin-screen">
+        <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
+        <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
+        <input type="password" id="admin-pin" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-center text-xl tracking-widest mb-4 focus:outline-none focus:border-indigo-500" maxlength="4" placeholder="••••" />
+        <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Panel</button>
+      </div>
+
+      <!-- Controls Screen -->
+      <div id="controls-screen" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-lg">Admin Control Panel</h3>
+          <button onclick="closeAdminModal()" class="text-gray-400">✕</button>
+        </div>
+
+        <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Set Booking Status</label>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button onclick="setStatus(true)" class="py-2.5 rounded-xl font-bold text-xs border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">Available</button>
+          <button onclick="setStatus(false)" class="py-2.5 rounded-xl font-bold text-xs border border-red-500/30 bg-red-500/10 text-red-400">Closed</button>
+        </div>
+
+        <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Set Menu Type</label>
+        <div class="space-y-2 mb-6">
+          <button onclick="setMenu('Veg')" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-xs font-semibold text-left px-4">🥗 Veg</button>
+          <button onclick="setMenu('Veg + Egg')" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-xs font-semibold text-left px-4">🥚 Veg + Egg</button>
+          <button onclick="setMenu('Veg + Non-Veg')" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-xs font-semibold text-left px-4">🍗 Veg + Non-Veg</button>
+        </div>
+
+        <button onclick="closeAdminModal()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-xs font-semibold">Done</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // PASTE YOUR SUPABASE DETAILS HERE
+    const SUPABASE_URL = "https://hkmlqympnmbxhsbnzlet.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_ac1YInd8xN-k3FwZ_HDrPw_px_0qa5Z";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentStatus = true;
+    let currentMenu = "Veg";
+
+    async function loadData() {
+      const { data } = await supabaseClient.from('lunch_status').select('*').eq('id', 1).single();
+      if (data) {
+        currentStatus = data.is_available;
+        currentMenu = data.menu_type;
+        renderPublicUI(data.updated_at);
+      }
+    }
+
+    function renderPublicUI(updatedAt) {
+      const card = document.getElementById("status-card");
+      const menuEl = document.getElementById("menu-type");
+      const updatedEl = document.getElementById("updated-at");
+
+      if (currentStatus) {
+        card.textContent = "🟢 BOOKING OPEN";
+        card.className = "py-3 px-4 rounded-2xl font-bold text-sm mb-6 border bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+      } else {
+        card.textContent = "🔴 BOOKING CLOSED / FULL";
+        card.className = "py-3 px-4 rounded-2xl font-bold text-sm mb-6 border bg-red-500/10 text-red-400 border-red-500/30";
+      }
+
+      menuEl.textContent = currentMenu;
+      if (updatedAt) {
+        updatedEl.textContent = "Last synced: " + new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
+    function openAdminModal() { document.getElementById("admin-modal").classList.remove("hidden"); }
+    function closeAdminModal() { document.getElementById("admin-modal").classList.add("hidden"); }
+
+    function verifyPin() {
+      const pin = document.getElementById("admin-pin").value;
+      if (pin === "1234") {
+        document.getElementById("pin-screen").classList.add("hidden");
+        document.getElementById("controls-screen").classList.remove("hidden");
+      } else {
+        alert("Wrong PIN!");
+      }
+    }
+
+    async function setStatus(status) { currentStatus = status; await saveToSupabase(); }
+    async function setMenu(menu) { currentMenu = menu; await saveToSupabase(); }
+
+    async function saveToSupabase() {
+      const { error } = await supabaseClient.from('lunch_status').update({
+        is_available: currentStatus,
+        menu_type: currentMenu,
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
+
+      if (!error) renderPublicUI(new Date().toISOString());
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
