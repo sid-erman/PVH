@@ -21,14 +21,9 @@
     </button>
 
     <div class="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3">
-      DAILY LUNCH BOOKING
+      DAILY & WEEKLY BOOKING
     </div>
-    <h1 class="text-2xl font-black mb-2">Book Tomorrow's Meal</h1>
-
-    <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs mb-6 flex items-center space-x-2">
-      <span>⏰</span>
-      <span class="font-medium">Booking closes strictly at <strong>4:00 PM today</strong>.</span>
-    </div>
+    <h1 class="text-2xl font-black mb-6">Book Your Meal</h1>
 
     <!-- Booking Form -->
     <form id="lunch-form" onsubmit="submitOrder(event)" class="space-y-4">
@@ -37,41 +32,56 @@
         <input type="text" id="user-name" required placeholder="Enter your name" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
       </div>
 
+      <!-- Meal Choice -->
       <div>
         <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Meal Preference</label>
-        <div class="space-y-2">
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="meal-choice" value="Veg" required class="accent-indigo-500">
-            <span class="ml-3 text-sm font-semibold">🥗 Veg</span>
+        <div class="grid grid-cols-3 gap-2">
+          <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="meal-choice" value="Veg" required class="accent-indigo-500 mb-1">
+            <span class="text-xs font-semibold">🥗 Veg</span>
           </label>
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="meal-choice" value="Veg + Egg" class="accent-indigo-500">
-            <span class="ml-3 text-sm font-semibold">🥚 Veg + Egg</span>
+          <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="meal-choice" value="Veg + Egg" class="accent-indigo-500 mb-1">
+            <span class="text-xs font-semibold">🥚 + Egg</span>
           </label>
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="meal-choice" value="Veg + Non-Veg" class="accent-indigo-500">
-            <span class="ml-3 text-sm font-semibold">🍗 Veg + Non-Veg</span>
+          <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="meal-choice" value="Veg + Non-Veg" class="accent-indigo-500 mb-1">
+            <span class="text-xs font-semibold">🍗 + Meat</span>
           </label>
         </div>
       </div>
 
-      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 text-sm">
-        Generate Lunch Ticket
+      <!-- Duration Choice -->
+      <div>
+        <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Duration</label>
+        <div class="space-y-2">
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="Daily" required class="accent-indigo-500" checked>
+            <span class="ml-3 text-sm font-semibold">Tomorrow Only</span>
+          </label>
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="Week (Except Friday)" class="accent-indigo-500">
+            <span class="ml-3 text-sm font-semibold">Entire Week (Except Friday)</span>
+          </label>
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="Week + Friday" class="accent-indigo-500">
+            <span class="ml-3 text-sm font-semibold">Entire Week + Friday</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 text-sm mt-2">
+        Generate Ticket
       </button>
     </form>
-
-    <!-- CLOSED MESSAGE (Shows if past 4:00 PM) -->
-    <div id="closed-msg" style="display: none;" class="py-8 text-center">
-      <div class="text-5xl mb-4">🚫</div>
-      <h3 class="text-xl font-bold text-red-400">Booking is Closed</h3>
-      <p class="text-xs text-gray-400 mt-2">It is past 4:00 PM. Please check back tomorrow morning to book your next meal.</p>
-    </div>
 
     <!-- GENERATED TICKET DISPLAY -->
     <div id="ticket-display" style="display: none;" class="flex flex-col items-center py-4">
       <div class="text-emerald-400 font-bold text-sm mb-1">✓ Booking Confirmed</div>
       <h2 id="ticket-name" class="text-xl font-black text-white">--</h2>
-      <p id="ticket-meal" class="text-xs text-indigo-400 font-bold mb-4">--</p>
+      <p id="ticket-meal" class="text-xs text-indigo-400 font-bold mb-1">--</p>
+      <p id="ticket-duration" class="text-[10px] text-gray-400 font-bold mb-4 bg-gray-800 px-3 py-1 rounded-full">--</p>
+      
       <div class="bg-white p-4 rounded-2xl shadow-xl mb-4" id="qrcode"></div>
       <p class="text-[11px] text-gray-400 text-center max-w-[220px]">
         Screenshot this QR code and show it at the lunch counter for verification.
@@ -85,7 +95,7 @@
       
       <div id="pin-screen">
         <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
-        <p class="text-xs text-gray-400 mb-4"></p>
+        <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
         <input type="password" id="admin-pin" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-center text-xl tracking-widest mb-4 focus:outline-none focus:border-indigo-500" maxlength="4" placeholder="••••" />
         <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Admin Panel</button>
       </div>
@@ -106,23 +116,23 @@
 
         <div class="grid grid-cols-3 gap-2 text-center">
           <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">Veg</div>
+            <div class="text-[10px] text-gray-400">Veg Total</div>
             <div id="count-veg" class="text-lg font-black text-emerald-400">0</div>
           </div>
           <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">+ Egg</div>
+            <div class="text-[10px] text-gray-400">+ Egg Total</div>
             <div id="count-egg" class="text-lg font-black text-amber-400">0</div>
           </div>
           <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">+ Non-Veg</div>
+            <div class="text-[10px] text-gray-400">+ Meat Total</div>
             <div id="count-nonveg" class="text-lg font-black text-rose-400">0</div>
           </div>
         </div>
 
         <div>
           <div class="flex justify-between items-center mb-2">
-            <span class="text-xs text-gray-400 font-semibold">Today's Bookings</span>
-            <button onclick="resetDayData()" class="text-[10px] text-red-400 hover:underline">Clear All</button>
+            <span class="text-xs text-gray-400 font-semibold">Active Roster</span>
+            <button onclick="resetAllData()" class="text-[10px] text-red-400 hover:underline">Clear All (End of Week)</button>
           </div>
           <div id="name-list" class="bg-gray-950 rounded-2xl border border-gray-800 p-3 max-h-40 overflow-y-auto space-y-2 text-xs">
             <div class="text-gray-500 text-center py-2">Loading...</div>
@@ -140,40 +150,37 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let html5QrcodeScanner = null;
+    const todayStr = new Date().toDateString(); // Standardized today string for scanner memory
 
-    // --- BULLETPROOF 4:00 PM CUTOFF ---
-    function enforceCutoff() {
-      const currentHour = new Date().getHours();
-      // 16 is 4:00 PM. From 16:00 to 23:59, the form is locked.
-      if (currentHour >= 16) { 
-        document.getElementById("lunch-form").style.display = "none"; 
-        document.getElementById("closed-msg").style.display = "block"; 
-        
-        // Physically disable the submit button
-        const btn = document.getElementById("submit-btn");
-        if(btn) btn.disabled = true;
-        
-        return true; 
+    // --- AUTO-FILL MEMORY ---
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedName = localStorage.getItem("lunch_user_name");
+      const savedChoice = localStorage.getItem("lunch_meal_choice");
+      const savedDuration = localStorage.getItem("lunch_duration_choice");
+
+      if (savedName) document.getElementById("user-name").value = savedName;
+      if (savedChoice) {
+        const radioBtn = document.querySelector(`input[name="meal-choice"][value="${savedChoice}"]`);
+        if (radioBtn) radioBtn.checked = true;
       }
-      return false;
-    }
-    
-    // Run cutoff check immediately when page loads
-    enforceCutoff();
+      if (savedDuration) {
+        const durBtn = document.querySelector(`input[name="duration-choice"][value="${savedDuration}"]`);
+        if (durBtn) durBtn.checked = true;
+      }
+    });
 
     async function submitOrder(e) {
       e.preventDefault();
 
-      // Double check time before submitting (in case they left the app open)
-      if (enforceCutoff()) {
-        alert("Booking closed! It is past 4:00 PM.");
-        return;
-      }
-
       const name = document.getElementById("user-name").value.trim();
       const choice = document.querySelector('input[name="meal-choice"]:checked')?.value;
+      const duration = document.querySelector('input[name="duration-choice"]:checked')?.value;
 
-      if (!name || !choice) return;
+      if (!name || !choice || !duration) return;
+
+      localStorage.setItem("lunch_user_name", name);
+      localStorage.setItem("lunch_meal_choice", choice);
+      localStorage.setItem("lunch_duration_choice", duration);
 
       const btn = document.getElementById("submit-btn");
       btn.disabled = true;
@@ -181,7 +188,7 @@
 
       const { data, error } = await supabaseClient
         .from('lunch_tickets')
-        .insert([{ person_name: name, menu_choice: choice }])
+        .insert([{ person_name: name, menu_choice: choice, duration: duration }])
         .select()
         .single();
 
@@ -190,18 +197,14 @@
         document.getElementById("ticket-display").style.display = "flex";
         document.getElementById("ticket-name").textContent = data.person_name;
         document.getElementById("ticket-meal").textContent = data.menu_choice;
+        document.getElementById("ticket-duration").textContent = data.duration;
 
-        new QRCode(document.getElementById("qrcode"), {
-          text: data.id,
-          width: 160,
-          height: 160
-        });
-
+        new QRCode(document.getElementById("qrcode"), { text: data.id, width: 160, height: 160 });
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
       } else {
         alert("Error creating ticket. Please try again.");
         btn.disabled = false;
-        btn.textContent = "Generate Lunch Ticket";
+        btn.textContent = "Generate Ticket";
       }
     }
 
@@ -210,19 +213,13 @@
     async function closeAdminModal() {
       if (html5QrcodeScanner) {
         try {
-          if (html5QrcodeScanner.isScanning) {
-            await html5QrcodeScanner.stop();
-          }
+          if (html5QrcodeScanner.isScanning) await html5QrcodeScanner.stop();
           html5QrcodeScanner.clear();
-        } catch (err) {
-          console.log("Scanner cleanup error:", err);
-        }
+        } catch (err) {}
         html5QrcodeScanner = null;
       }
-      
       const resultDiv = document.getElementById("scan-result");
       if (resultDiv) resultDiv.innerHTML = "";
-      
       document.getElementById("admin-modal").classList.add("hidden");
     }
 
@@ -246,23 +243,17 @@
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 200, height: 200 } },
         async (decodedText) => {
-          if (html5QrcodeScanner.isScanning) {
-            await html5QrcodeScanner.stop();
-          }
+          if (html5QrcodeScanner.isScanning) await html5QrcodeScanner.stop();
           resultDiv.innerHTML = `<span class="text-amber-400">Verifying Ticket...</span>`;
 
-          const { data, error } = await supabaseClient
-            .from('lunch_tickets')
-            .select('*')
-            .eq('id', decodedText)
-            .single();
+          const { data, error } = await supabaseClient.from('lunch_tickets').select('*').eq('id', decodedText).single();
 
           if (data) {
-            if (data.verified) {
-              resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY CLAIMED!<br>${data.person_name} (${data.menu_choice})</span>`;
+            if (data.last_scanned === todayStr) {
+              resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY SCANNED TODAY!<br>${data.person_name} (${data.menu_choice})</span>`;
             } else {
-              await supabaseClient.from('lunch_tickets').update({ verified: true }).eq('id', data.id);
-              resultDiv.innerHTML = `<span class="text-emerald-400">✅ VALID TICKET!<br>${data.person_name} - ${data.menu_choice}</span>`;
+              await supabaseClient.from('lunch_tickets').update({ last_scanned: todayStr }).eq('id', data.id);
+              resultDiv.innerHTML = `<span class="text-emerald-400">✅ VALID TICKET!<br>${data.person_name} - ${data.menu_choice}<br><span class="text-gray-400 text-[10px]">${data.duration}</span></span>`;
               confetti({ particleCount: 40, spread: 50 });
             }
           } else {
@@ -277,10 +268,15 @@
     }
 
     async function loadAdminData() {
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0); 
+      // 1. Calculate Yesterday Midnight (to safely delete expired Daily tickets)
+      const startOfYesterday = new Date();
+      startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+      startOfYesterday.setHours(0, 0, 0, 0); 
       
-      await supabaseClient.from('lunch_tickets').delete().lt('created_at', startOfToday.toISOString());
+      // 2. Auto-delete ONLY 'Daily' tickets that were created before yesterday
+      await supabaseClient.from('lunch_tickets').delete().eq('duration', 'Daily').lt('created_at', startOfYesterday.toISOString());
+      
+      // 3. Fetch active roster
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
@@ -289,7 +285,7 @@
         nameList.innerHTML = "";
 
         if (data.length === 0) {
-          nameList.innerHTML = `<div class="text-gray-500 text-center py-2">No bookings yet today.</div>`;
+          nameList.innerHTML = `<div class="text-gray-500 text-center py-2">No active bookings.</div>`;
         }
 
         data.forEach(item => {
@@ -297,16 +293,18 @@
           if (item.menu_choice === "Veg + Egg") egg++;
           if (item.menu_choice === "Veg + Non-Veg") nonVeg++;
 
+          const isScannedToday = item.last_scanned === todayStr;
+
           const row = document.createElement("div");
-          row.className = "flex justify-between items-center border-b border-gray-900 pb-1.5 last:border-0";
+          row.className = "flex justify-between items-center border-b border-gray-900 pb-2 mb-2 last:border-0 last:mb-0";
           row.innerHTML = `
             <div>
-              <span class="font-medium text-gray-200">${item.person_name}</span>
-              <span class="ml-1 text-[9px] ${item.verified ? 'text-emerald-400' : 'text-gray-500'}">
-                ${item.verified ? '✓ Verified' : '• Pending'}
-              </span>
+              <div class="font-medium text-gray-200">${item.person_name} <span class="text-[9px] text-gray-500 ml-1">(${item.duration})</span></div>
+              <div class="text-[9px] ${isScannedToday ? 'text-emerald-400' : 'text-gray-500'}">
+                ${isScannedToday ? '✓ Scanned Today' : '• Pending Today'}
+              </div>
             </div>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">${item.menu_choice}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 whitespace-nowrap">${item.menu_choice}</span>
           `;
           nameList.appendChild(row);
         });
@@ -317,8 +315,8 @@
       }
     }
 
-    async function resetDayData() {
-      if (confirm("Are you sure you want to clear all tickets?")) {
+    async function resetAllData() {
+      if (confirm("Are you sure you want to clear ALL tickets? (Use this at the end of the week)")) {
         await supabaseClient.from('lunch_tickets').delete().neq('person_name', '');
         await loadAdminData();
       }
