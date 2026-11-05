@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lunch Ticket & Scanner</title>
   <link rel="icon" type="image/jpeg" href="pvh.jpg">
+  <title>Lunch Ticket & Scanner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -52,8 +52,6 @@
       <!-- Dynamic Day / Duration Choice -->
       <div>
         <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Date or Weekly Pass</label>
-        
-        <!-- Dynamically filled with available upcoming dates & weekly packages -->
         <div id="dynamic-days-container"></div>
       </div>
 
@@ -80,6 +78,7 @@
   <div id="admin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full max-h-[90vh] flex flex-col overflow-y-auto">
       
+      <!-- PIN Screen -->
       <div id="pin-screen">
         <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
         <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
@@ -87,42 +86,72 @@
         <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Admin Panel</button>
       </div>
 
+      <!-- Admin Dashboard View -->
       <div id="controls-screen" class="hidden space-y-4">
         <div class="flex justify-between items-center">
-          <h3 class="font-bold text-lg">Admin Verification</h3>
+          <h3 class="font-bold text-lg">Admin Panel</h3>
           <button onclick="closeAdminModal()" class="text-gray-400 text-xl font-bold">✕</button>
         </div>
 
-        <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
-          <button id="start-scan-btn" onclick="startScanner()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mb-2">
-            📷 Open Camera Scanner
+        <!-- Main Navigation Tabs -->
+        <div class="flex space-x-2 bg-gray-950 p-1 rounded-xl border border-gray-800 text-xs">
+          <button type="button" onclick="switchAdminTab('scanner')" id="tab-btn-scanner" class="flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all">
+            📷 Scanner
           </button>
-          <div id="reader" class="overflow-hidden rounded-xl"></div>
-          <div id="scan-result" class="mt-2 text-xs text-center font-bold"></div>
+          <button type="button" onclick="switchAdminTab('stats')" id="tab-btn-stats" class="flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all">
+            📊 Stats
+          </button>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 text-center">
-          <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">Veg Total</div>
-            <div id="count-veg" class="text-lg font-black text-emerald-400">0</div>
+        <!-- TAB 1: SCANNER & LIVE TODAY ROSTER -->
+        <div id="admin-tab-scanner" class="space-y-4">
+          <!-- Camera Scanner Area -->
+          <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
+            <button id="start-scan-btn" onclick="startScanner()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mb-2">
+              📷 Open Camera Scanner
+            </button>
+            <div id="reader" class="overflow-hidden rounded-xl"></div>
+            <div id="scan-result" class="mt-2 text-xs text-center font-bold"></div>
           </div>
-          <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">+ Egg Total</div>
-            <div id="count-egg" class="text-lg font-black text-amber-400">0</div>
-          </div>
-          <div class="bg-gray-950 p-2.5 rounded-2xl border border-gray-800">
-            <div class="text-[10px] text-gray-400">+ Meat Total</div>
-            <div id="count-nonveg" class="text-lg font-black text-rose-400">0</div>
+
+          <!-- Order Roster -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs text-gray-400 font-semibold">Active Roster</span>
+              <button onclick="resetAllData()" class="text-[10px] text-red-400 hover:underline">Clear All (End of Week)</button>
+            </div>
+            <div id="name-list" class="bg-gray-950 rounded-2xl border border-gray-800 p-3 max-h-56 overflow-y-auto space-y-2 text-xs">
+              <div class="text-gray-500 text-center py-2">Loading...</div>
+            </div>
           </div>
         </div>
 
-        <div>
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-xs text-gray-400 font-semibold">Active Roster</span>
-            <button onclick="resetAllData()" class="text-[10px] text-red-400 hover:underline">Clear All (End of Week)</button>
+        <!-- TAB 2: DETAILED STATS WITH SUB-BUTTONS -->
+        <div id="admin-tab-stats" class="hidden space-y-3">
+          <!-- Stats Sub-Navigation Toggle Buttons -->
+          <div class="flex space-x-2 bg-gray-950 p-1 rounded-xl border border-gray-800 text-[11px]">
+            <button type="button" onclick="switchStatsSubTab('prev-week')" id="subtab-btn-prev" class="flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all">
+              ⬅️ Prev Week Stats
+            </button>
+            <button type="button" onclick="switchStatsSubTab('this-week')" id="subtab-btn-this" class="flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all">
+              📅 This Week Stats
+            </button>
           </div>
-          <div id="name-list" class="bg-gray-950 rounded-2xl border border-gray-800 p-3 max-h-40 overflow-y-auto space-y-2 text-xs">
-            <div class="text-gray-500 text-center py-2">Loading...</div>
+
+          <!-- Prev Week Content View -->
+          <div id="stats-sub-prev" class="hidden space-y-3">
+            <div class="text-xs text-gray-400 font-semibold mb-1">Previous Week Breakdown (Mon-Fri)</div>
+            <div id="stats-prev-week-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+              <div class="text-gray-500 text-center py-4 text-xs">Loading previous week statistics...</div>
+            </div>
+          </div>
+
+          <!-- This Week Content View -->
+          <div id="stats-sub-this" class="space-y-3">
+            <div class="text-xs text-gray-400 font-semibold mb-1">This Week Breakdown (Mon-Fri)</div>
+            <div id="stats-this-week-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+              <div class="text-gray-500 text-center py-4 text-xs">Loading this week statistics...</div>
+            </div>
           </div>
         </div>
 
@@ -132,6 +161,7 @@
   </div>
 
   <script>
+    // --- SUPABASE CREDENTIALS ---
     const SUPABASE_URL = "https://hkmlqympnmbxhsbnzlet.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ac1YInd8xN-k3FwZ_HDrPw_px_0qa5Z";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -146,7 +176,7 @@
 
       const now = new Date();
       const currentHour = now.getHours();
-      const isPastCutoff = currentHour >= 16; // 16:00 = 4:00 PM Cutoff
+      const isPastCutoff = currentHour >= 16;
       
       const formatDate = (d) => {
         return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -155,14 +185,12 @@
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       };
 
-      // 1. Single Day Pickers: capped at 4 upcoming weekdays
-      // If past 4:00 PM, tomorrow is closed, so we skip tomorrow (+2 days offset)
       let upcomingWeekdays = [];
       let cur = new Date(now);
       cur.setDate(cur.getDate() + (isPastCutoff ? 2 : 1));
 
       while (upcomingWeekdays.length < 4) {
-        const dayOfWeek = cur.getDay(); // 0 = Sun, 6 = Sat
+        const dayOfWeek = cur.getDay();
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
           upcomingWeekdays.push(new Date(cur));
         }
@@ -171,7 +199,6 @@
 
       let html = "";
 
-      // Notice banner if past 4:00 PM
       if (isPastCutoff) {
         html += `
           <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] mb-3 flex items-center space-x-2">
@@ -193,8 +220,7 @@
       });
       html += `</div>`;
 
-      // 2. Compute "This Week" dates starting from TODAY
-      const currentDayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+      const currentDayOfWeek = now.getDay();
       const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
       
       let thisMon = new Date(now); thisMon.setDate(now.getDate() + diffToMon);
@@ -205,7 +231,6 @@
       const thisThuStr = formatShortDate(thisThu);
       const thisFriStr = formatShortDate(thisFri);
 
-      // 3. Compute "Next Week" Monday - Friday dates
       let nextMon = new Date(thisMon); nextMon.setDate(thisMon.getDate() + 7);
       let nextThu = new Date(nextMon); nextThu.setDate(nextMon.getDate() + 3);
       let nextFri = new Date(nextMon); nextFri.setDate(nextMon.getDate() + 4);
@@ -263,6 +288,46 @@
       container.innerHTML = html;
     }
 
+    // --- MAIN TAB SWITCHER LOGIC ---
+    function switchAdminTab(tab) {
+      const scannerTab = document.getElementById("admin-tab-scanner");
+      const statsTab = document.getElementById("admin-tab-stats");
+      const btnScanner = document.getElementById("tab-btn-scanner");
+      const btnStats = document.getElementById("tab-btn-stats");
+
+      if (tab === 'scanner') {
+        scannerTab.classList.remove("hidden");
+        statsTab.classList.add("hidden");
+        btnScanner.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnStats.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      } else {
+        scannerTab.classList.add("hidden");
+        statsTab.classList.remove("hidden");
+        btnStats.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnScanner.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      }
+    }
+
+    // --- STATS SUB-TAB SWITCHER LOGIC ---
+    function switchStatsSubTab(sub) {
+      const prevSub = document.getElementById("stats-sub-prev");
+      const thisSub = document.getElementById("stats-sub-this");
+      const btnPrev = document.getElementById("subtab-btn-prev");
+      const btnThis = document.getElementById("subtab-btn-this");
+
+      if (sub === 'prev-week') {
+        prevSub.classList.remove("hidden");
+        thisSub.classList.add("hidden");
+        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      } else {
+        prevSub.classList.add("hidden");
+        thisSub.classList.remove("hidden");
+        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      }
+    }
+
     // --- AUTO-FILL MEMORY & INIT ---
     document.addEventListener("DOMContentLoaded", () => {
       renderDynamicDays();
@@ -291,7 +356,6 @@
 
       if (!name || !choice || !duration) return;
 
-      // --- 4:00 PM CUTOFF VALIDATION ---
       const now = new Date();
       if (now.getHours() >= 16) {
         const tomorrow = new Date(now);
@@ -418,7 +482,7 @@
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
-        let veg = 0, egg = 0, nonVeg = 0;
+        // --- 1. RENDER TODAY SCANNER TAB DATA ---
         const nameList = document.getElementById("name-list");
         nameList.innerHTML = "";
 
@@ -427,10 +491,6 @@
         }
 
         data.forEach(item => {
-          if (item.menu_choice === "Veg") veg++;
-          if (item.menu_choice === "Veg + Egg") egg++;
-          if (item.menu_choice === "Veg + Non-Veg") nonVeg++;
-
           const isScannedToday = item.last_scanned === todayStr;
 
           const row = document.createElement("div");
@@ -447,9 +507,99 @@
           nameList.appendChild(row);
         });
 
-        document.getElementById("count-veg").textContent = veg;
-        document.getElementById("count-egg").textContent = egg;
-        document.getElementById("count-nonveg").textContent = nonVeg;
+        // --- 2. CALCULATE PREV WEEK & THIS WEEK DATES ---
+        const now = new Date();
+        const currentDayOfWeek = now.getDay();
+        const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
+        
+        let thisMon = new Date(now); 
+        thisMon.setDate(now.getDate() + diffToMon);
+        thisMon.setHours(0,0,0,0);
+
+        let prevMon = new Date(thisMon);
+        prevMon.setDate(thisMon.getDate() - 7);
+
+        let prevWeekDays = [];
+        for (let i = 0; i < 5; i++) {
+          let d = new Date(prevMon);
+          d.setDate(prevMon.getDate() + i);
+          prevWeekDays.push(d);
+        }
+
+        let thisWeekDays = [];
+        for (let i = 0; i < 5; i++) {
+          let d = new Date(thisMon);
+          d.setDate(thisMon.getDate() + i);
+          thisWeekDays.push(d);
+        }
+
+        // Helper function to build 5-day breakdown HTML
+        const generateWeekCardsHTML = (weekDaysArray) => {
+          let html = "";
+          weekDaysArray.forEach(dayDate => {
+            const dayFormatted = dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const dateOnly = dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+            const dayTickets = data.filter(item => {
+              if (item.duration.includes("Week")) {
+                if (item.duration.includes("Excl. Fri") && dayName === "Friday") return false;
+                if (dayName === "Saturday" || dayName === "Sunday") return false;
+
+                const matchRange = item.duration.match(/([A-Z][a-z]{2}\s\d+)\s*-\s*([A-Z][a-z]{2}\s\d+)/);
+                if (matchRange) {
+                  const year = dayDate.getFullYear();
+                  const startD = new Date(matchRange[1] + ", " + year);
+                  const endD = new Date(matchRange[2] + ", " + year);
+                  startD.setHours(0,0,0,0);
+                  endD.setHours(23,59,59,999);
+                  const compareD = new Date(dayDate);
+                  compareD.setHours(12,0,0,0);
+                  return compareD >= startD && compareD <= endD;
+                }
+                const createdDate = new Date(item.created_at);
+                const diffDays = Math.abs((dayDate - createdDate) / (1000 * 60 * 60 * 24));
+                return diffDays <= 7;
+              }
+              return item.duration.includes(dateOnly) || item.duration === dayFormatted;
+            });
+
+            let dVeg = 0, dEgg = 0, dMeat = 0;
+            dayTickets.forEach(t => {
+              if (t.menu_choice === "Veg") dVeg++;
+              if (t.menu_choice === "Veg + Egg") dEgg++;
+              if (t.menu_choice === "Veg + Non-Veg") dMeat++;
+            });
+
+            html += `
+              <div class="bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-2xl space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-indigo-300">${dayFormatted}</span>
+                  <span class="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full">${dayTickets.length} orders</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div class="bg-gray-950/80 p-2 rounded-xl border border-gray-800">
+                    <div class="text-[9px] text-gray-400">Veg</div>
+                    <div class="font-bold text-emerald-400 text-sm">${dVeg}</div>
+                  </div>
+                  <div class="bg-gray-950/80 p-2 rounded-xl border border-gray-800">
+                    <div class="text-[9px] text-gray-400">+ Egg</div>
+                    <div class="font-bold text-amber-400 text-sm">${dEgg}</div>
+                  </div>
+                  <div class="bg-gray-950/80 p-2 rounded-xl border border-gray-800">
+                    <div class="text-[9px] text-gray-400">+ Meat</div>
+                    <div class="font-bold text-rose-400 text-sm">${dMeat}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          return html;
+        };
+
+        // Render to respective containers
+        document.getElementById("stats-prev-week-container").innerHTML = generateWeekCardsHTML(prevWeekDays);
+        document.getElementById("stats-this-week-container").innerHTML = generateWeekCardsHTML(thisWeekDays);
       }
     }
 
