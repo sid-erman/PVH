@@ -81,7 +81,6 @@
       <!-- PIN Screen -->
       <div id="pin-screen">
         <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
-        <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
         <input type="password" id="admin-pin" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-center text-xl tracking-widest mb-4 focus:outline-none focus:border-indigo-500" maxlength="4" placeholder="••••" />
         <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Admin Panel</button>
       </div>
@@ -176,7 +175,8 @@
 
       const now = new Date();
       const currentHour = now.getHours();
-      const isPastCutoff = currentHour >= 16;
+      const currentDayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+      const isPastCutoff = currentHour >= 16; // 4:00 PM Cutoff
       
       const formatDate = (d) => {
         return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -185,9 +185,15 @@
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       };
 
+      // 1. Single Day Pickers: capped at 4 upcoming valid weekdays
       let upcomingWeekdays = [];
       let cur = new Date(now);
-      cur.setDate(cur.getDate() + (isPastCutoff ? 2 : 1));
+      cur.setDate(cur.getDate() + 1);
+
+      // If today is past 4:00 PM, tomorrow's booking is closed, skip tomorrow
+      if (isPastCutoff) {
+        cur.setDate(cur.getDate() + 1);
+      }
 
       while (upcomingWeekdays.length < 4) {
         const dayOfWeek = cur.getDay();
@@ -203,7 +209,7 @@
         html += `
           <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] mb-3 flex items-center space-x-2">
             <span>⏰</span>
-            <span>It is past <strong>4:00 PM</strong>. Booking for tomorrow is now closed.</span>
+            <span>Past <strong>4:00 PM</strong>. Next upcoming day booking is closed.</span>
           </div>
         `;
       }
@@ -220,42 +226,52 @@
       });
       html += `</div>`;
 
-      const currentDayOfWeek = now.getDay();
+      // 2. Compute "This Week" & "Next Week" dates
       const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
       
       let thisMon = new Date(now); thisMon.setDate(now.getDate() + diffToMon);
       let thisThu = new Date(thisMon); thisThu.setDate(thisMon.getDate() + 3);
       let thisFri = new Date(thisMon); thisFri.setDate(thisMon.getDate() + 4);
 
-      const todayStrShort = formatShortDate(now);
-      const thisThuStr = formatShortDate(thisThu);
-      const thisFriStr = formatShortDate(thisFri);
-
       let nextMon = new Date(thisMon); nextMon.setDate(thisMon.getDate() + 7);
       let nextThu = new Date(nextMon); nextThu.setDate(nextMon.getDate() + 3);
       let nextFri = new Date(nextMon); nextFri.setDate(nextMon.getDate() + 4);
+
+      const thisThuStr = formatShortDate(thisThu);
+      const thisFriStr = formatShortDate(thisFri);
 
       const nextMonStr = formatShortDate(nextMon);
       const nextThuStr = formatShortDate(nextThu);
       const nextFriStr = formatShortDate(nextFri);
 
-      let thisExclFriValue = (todayStrShort === thisThuStr) 
-        ? `This Week (Excl. Fri: ${todayStrShort})` 
-        : `This Week (Excl. Fri: ${todayStrShort} - ${thisThuStr})`;
-
-      let thisInclFriValue = (todayStrShort === thisFriStr) 
-        ? `This Week (Incl. Fri: ${todayStrShort})` 
-        : `This Week (Incl. Fri: ${todayStrShort} - ${thisFriStr})`;
-
-      const nextExclFriValue = `Next Week (Excl. Fri: ${nextMonStr} - ${nextThuStr})`;
-      const nextInclFriValue = `Next Week (Incl. Fri: ${nextMonStr} - ${nextFriStr})`;
-
       html += `<div class="space-y-2 border-t border-gray-800 pt-3">`;
 
-      if (currentDayOfWeek >= 1 && currentDayOfWeek <= 5) {
-        html += `<div class="text-[11px] text-indigo-400 font-semibold mb-1">This Week Packages (Starting Today)</div>`;
+      // --- DYNAMIC "THIS WEEK" STARTING DATE LOGIC ---
+      // Determine the first active bookable day for "This Week"
+      let startOffset = 0;
+      if (currentDayOfWeek >= 1 && currentDayOfWeek <= 4) {
+        startOffset = currentDayOfWeek; // e.g. Mon=1 -> Starts Tuesday (thisMon + 1)
+      }
 
-        if (currentDayOfWeek <= 4) {
+      let thisWeekStart = new Date(thisMon);
+      thisWeekStart.setDate(thisMon.getDate() + startOffset);
+      const thisStartStr = formatShortDate(thisWeekStart);
+
+      // "This Week" packages remain valid as long as there is at least 1 remaining day in the week
+      const hasDaysRemainingInThisWeek = (currentDayOfWeek === 0 || currentDayOfWeek === 6 || currentDayOfWeek < 4 || (currentDayOfWeek === 4 && !isPastCutoff));
+
+      if (hasDaysRemainingInThisWeek) {
+        const thisExclFriValue = (thisStartStr === thisThuStr)
+          ? `This Week (Excl. Fri: ${thisStartStr})`
+          : `This Week (Excl. Fri: ${thisStartStr} - ${thisThuStr})`;
+
+        const thisInclFriValue = (thisStartStr === thisFriStr)
+          ? `This Week (Incl. Fri: ${thisStartStr})`
+          : `This Week (Incl. Fri: ${thisStartStr} - ${thisFriStr})`;
+        
+        html += `<div class="text-[11px] text-indigo-400 font-semibold mb-1">This Week Packages</div>`;
+        
+        if (currentDayOfWeek < 4 || (currentDayOfWeek === 0 || currentDayOfWeek === 6)) {
           html += `
             <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
               <input type="radio" name="duration-choice" value="${thisExclFriValue}" class="accent-indigo-500">
@@ -272,18 +288,33 @@
         `;
       }
 
-      html += `
-          <div class="text-[11px] text-indigo-400 font-semibold mt-3 mb-1">Next Week Packages</div>
+      // "NEXT WEEK" PACKAGES: Available until FRIDAY 4:00 PM cutoff
+      const isNextWeekCutoffPassed = (currentDayOfWeek === 5 && isPastCutoff) || currentDayOfWeek === 6 || (currentDayOfWeek === 0 && isPastCutoff);
+
+      if (!isNextWeekCutoffPassed) {
+        const nextExclFriValue = `Next Week (Excl. Fri: ${nextMonStr} - ${nextThuStr})`;
+        const nextInclFriValue = `Next Week (Incl. Fri: ${nextMonStr} - ${nextFriStr})`;
+
+        html += `
+          <div class="text-[11px] text-indigo-400 font-semibold mt-2 mb-1">Next Week Packages (Cutoff: Fri 4:00 PM)</div>
           <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
             <input type="radio" name="duration-choice" value="${nextExclFriValue}" class="accent-indigo-500">
-            <span class="ml-3 text-xs font-semibold">Next Week (Excl. Fri: ${nextMonStr} - ${nextThuStr})</span>
+            <span class="ml-3 text-xs font-semibold">${nextExclFriValue}</span>
           </label>
           <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
             <input type="radio" name="duration-choice" value="${nextInclFriValue}" class="accent-indigo-500">
-            <span class="ml-3 text-xs font-semibold">Next Week (Incl. Fri: ${nextMonStr} - ${nextFriStr})</span>
+            <span class="ml-3 text-xs font-semibold">${nextInclFriValue}</span>
           </label>
-        </div>
-      `;
+        `;
+      } else {
+        html += `
+          <div class="p-2.5 bg-gray-950 border border-gray-800 rounded-xl text-gray-500 text-[11px]">
+            🔒 Weekly pass cutoff for next week closed on Friday at 4:00 PM.
+          </div>
+        `;
+      }
+
+      html += `</div>`;
 
       container.innerHTML = html;
     }
@@ -533,7 +564,6 @@
           thisWeekDays.push(d);
         }
 
-        // Helper function to build 5-day breakdown HTML
         const generateWeekCardsHTML = (weekDaysArray) => {
           let html = "";
           weekDaysArray.forEach(dayDate => {
@@ -597,7 +627,6 @@
           return html;
         };
 
-        // Render to respective containers
         document.getElementById("stats-prev-week-container").innerHTML = generateWeekCardsHTML(prevWeekDays);
         document.getElementById("stats-this-week-container").innerHTML = generateWeekCardsHTML(thisWeekDays);
       }
