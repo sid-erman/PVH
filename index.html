@@ -15,17 +15,15 @@
 
   <main id="main-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
     
-    <!-- Admin Settings Gear -->
     <button onclick="openAdminModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white p-2 text-xl z-10">
       ⚙️
     </button>
 
     <div class="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3">
-      DAILY & WEEKLY BOOKING
+      OFFICE LUNCH BOOKING
     </div>
     <h1 class="text-2xl font-black mb-6">Book Your Meal</h1>
 
-    <!-- Booking Form -->
     <form id="lunch-form" onsubmit="submitOrder(event)" class="space-y-4">
       <div>
         <label class="text-xs text-gray-400 font-semibold block mb-1 text-left">Your Name</label>
@@ -38,36 +36,25 @@
         <div class="grid grid-cols-3 gap-2">
           <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
             <input type="radio" name="meal-choice" value="Veg" required class="accent-indigo-500 mb-1">
-            <span class="text-xs font-semibold">🥗 Veg</span>
+            <span class="text-[11px] font-semibold">🥗 Veg</span>
           </label>
           <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
             <input type="radio" name="meal-choice" value="Veg + Egg" class="accent-indigo-500 mb-1">
-            <span class="text-xs font-semibold">🥚 + Egg</span>
+            <span class="text-[11px] font-semibold">🥚 + Egg</span>
           </label>
           <label class="flex flex-col items-center justify-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
             <input type="radio" name="meal-choice" value="Veg + Non-Veg" class="accent-indigo-500 mb-1">
-            <span class="text-xs font-semibold">🍗 + Meat</span>
+            <span class="text-[11px] font-semibold">🍗 + Meat</span>
           </label>
         </div>
       </div>
 
-      <!-- Duration Choice -->
+      <!-- Dynamic Day / Duration Choice -->
       <div>
-        <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Duration</label>
-        <div class="space-y-2">
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="duration-choice" value="Daily" required class="accent-indigo-500" checked>
-            <span class="ml-3 text-sm font-semibold">Tomorrow Only</span>
-          </label>
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="duration-choice" value="Week (Except Friday)" class="accent-indigo-500">
-            <span class="ml-3 text-sm font-semibold">Entire Week (Except Friday)</span>
-          </label>
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="duration-choice" value="Week + Friday" class="accent-indigo-500">
-            <span class="ml-3 text-sm font-semibold">Entire Week + Friday</span>
-          </label>
-        </div>
+        <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Date or Weekly Pass</label>
+        
+        <!-- Dynamically filled with available upcoming dates & weekly packages -->
+        <div id="dynamic-days-container"></div>
       </div>
 
       <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 text-sm mt-2">
@@ -80,7 +67,7 @@
       <div class="text-emerald-400 font-bold text-sm mb-1">✓ Booking Confirmed</div>
       <h2 id="ticket-name" class="text-xl font-black text-white">--</h2>
       <p id="ticket-meal" class="text-xs text-indigo-400 font-bold mb-1">--</p>
-      <p id="ticket-duration" class="text-[10px] text-gray-400 font-bold mb-4 bg-gray-800 px-3 py-1 rounded-full">--</p>
+      <p id="ticket-duration" class="text-[10px] text-gray-400 font-bold mb-4 bg-gray-800 px-3 py-1 rounded-full text-center">--</p>
       
       <div class="bg-white p-4 rounded-2xl shadow-xl mb-4" id="qrcode"></div>
       <p class="text-[11px] text-gray-400 text-center max-w-[220px]">
@@ -150,10 +137,136 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let html5QrcodeScanner = null;
-    const todayStr = new Date().toDateString(); // Standardized today string for scanner memory
+    const todayStr = new Date().toDateString(); 
 
-    // --- AUTO-FILL MEMORY ---
+    // --- CULT-STYLE DYNAMIC DATE & WEEK RENDERER ---
+    function renderDynamicDays() {
+      const container = document.getElementById("dynamic-days-container");
+      if (!container) return;
+
+      const now = new Date();
+      const currentHour = now.getHours();
+      const isPastCutoff = currentHour >= 16; // 16:00 = 4:00 PM Cutoff
+      
+      const formatDate = (d) => {
+        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      };
+      const formatShortDate = (d) => {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      };
+
+      // 1. Single Day Pickers: capped at 4 upcoming weekdays
+      // If past 4:00 PM, tomorrow is closed, so we skip tomorrow (+2 days offset)
+      let upcomingWeekdays = [];
+      let cur = new Date(now);
+      cur.setDate(cur.getDate() + (isPastCutoff ? 2 : 1));
+
+      while (upcomingWeekdays.length < 4) {
+        const dayOfWeek = cur.getDay(); // 0 = Sun, 6 = Sat
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          upcomingWeekdays.push(new Date(cur));
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      let html = "";
+
+      // Notice banner if past 4:00 PM
+      if (isPastCutoff) {
+        html += `
+          <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] mb-3 flex items-center space-x-2">
+            <span>⏰</span>
+            <span>It is past <strong>4:00 PM</strong>. Booking for tomorrow is now closed.</span>
+          </div>
+        `;
+      }
+
+      html += `<div class="grid grid-cols-2 gap-2 mb-3">`;
+      upcomingWeekdays.forEach((d, idx) => {
+        const dateLabel = formatDate(d);
+        html += `
+          <label class="flex items-center p-2.5 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="${dateLabel}" ${idx === 0 ? 'checked' : ''} class="accent-indigo-500">
+            <span class="ml-2 text-xs font-semibold">${dateLabel}</span>
+          </label>
+        `;
+      });
+      html += `</div>`;
+
+      // 2. Compute "This Week" dates starting from TODAY
+      const currentDayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+      const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
+      
+      let thisMon = new Date(now); thisMon.setDate(now.getDate() + diffToMon);
+      let thisThu = new Date(thisMon); thisThu.setDate(thisMon.getDate() + 3);
+      let thisFri = new Date(thisMon); thisFri.setDate(thisMon.getDate() + 4);
+
+      const todayStrShort = formatShortDate(now);
+      const thisThuStr = formatShortDate(thisThu);
+      const thisFriStr = formatShortDate(thisFri);
+
+      // 3. Compute "Next Week" Monday - Friday dates
+      let nextMon = new Date(thisMon); nextMon.setDate(thisMon.getDate() + 7);
+      let nextThu = new Date(nextMon); nextThu.setDate(nextMon.getDate() + 3);
+      let nextFri = new Date(nextMon); nextFri.setDate(nextMon.getDate() + 4);
+
+      const nextMonStr = formatShortDate(nextMon);
+      const nextThuStr = formatShortDate(nextThu);
+      const nextFriStr = formatShortDate(nextFri);
+
+      let thisExclFriValue = (todayStrShort === thisThuStr) 
+        ? `This Week (Excl. Fri: ${todayStrShort})` 
+        : `This Week (Excl. Fri: ${todayStrShort} - ${thisThuStr})`;
+
+      let thisInclFriValue = (todayStrShort === thisFriStr) 
+        ? `This Week (Incl. Fri: ${todayStrShort})` 
+        : `This Week (Incl. Fri: ${todayStrShort} - ${thisFriStr})`;
+
+      const nextExclFriValue = `Next Week (Excl. Fri: ${nextMonStr} - ${nextThuStr})`;
+      const nextInclFriValue = `Next Week (Incl. Fri: ${nextMonStr} - ${nextFriStr})`;
+
+      html += `<div class="space-y-2 border-t border-gray-800 pt-3">`;
+
+      if (currentDayOfWeek >= 1 && currentDayOfWeek <= 5) {
+        html += `<div class="text-[11px] text-indigo-400 font-semibold mb-1">This Week Packages (Starting Today)</div>`;
+
+        if (currentDayOfWeek <= 4) {
+          html += `
+            <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+              <input type="radio" name="duration-choice" value="${thisExclFriValue}" class="accent-indigo-500">
+              <span class="ml-3 text-xs font-semibold">${thisExclFriValue}</span>
+            </label>
+          `;
+        }
+
+        html += `
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="${thisInclFriValue}" class="accent-indigo-500">
+            <span class="ml-3 text-xs font-semibold">${thisInclFriValue}</span>
+          </label>
+        `;
+      }
+
+      html += `
+          <div class="text-[11px] text-indigo-400 font-semibold mt-3 mb-1">Next Week Packages</div>
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="${nextExclFriValue}" class="accent-indigo-500">
+            <span class="ml-3 text-xs font-semibold">Next Week (Excl. Fri: ${nextMonStr} - ${nextThuStr})</span>
+          </label>
+          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+            <input type="radio" name="duration-choice" value="${nextInclFriValue}" class="accent-indigo-500">
+            <span class="ml-3 text-xs font-semibold">Next Week (Incl. Fri: ${nextMonStr} - ${nextFriStr})</span>
+          </label>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // --- AUTO-FILL MEMORY & INIT ---
     document.addEventListener("DOMContentLoaded", () => {
+      renderDynamicDays();
+
       const savedName = localStorage.getItem("lunch_user_name");
       const savedChoice = localStorage.getItem("lunch_meal_choice");
       const savedDuration = localStorage.getItem("lunch_duration_choice");
@@ -177,6 +290,19 @@
       const duration = document.querySelector('input[name="duration-choice"]:checked')?.value;
 
       if (!name || !choice || !duration) return;
+
+      // --- 4:00 PM CUTOFF VALIDATION ---
+      const now = new Date();
+      if (now.getHours() >= 16) {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const tomorrowFormatted = tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        if (duration === tomorrowFormatted) {
+          alert("Booking for tomorrow closes strictly at 4:00 PM. Please select another date.");
+          return;
+        }
+      }
 
       localStorage.setItem("lunch_user_name", name);
       localStorage.setItem("lunch_meal_choice", choice);
@@ -249,7 +375,28 @@
           const { data, error } = await supabaseClient.from('lunch_tickets').select('*').eq('id', decodedText).single();
 
           if (data) {
-            if (data.last_scanned === todayStr) {
+            const now = new Date();
+            const todayFormatted = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const todayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const todayDateOnly = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            let isDayValid = false;
+
+            if (data.duration.includes("Week")) {
+              if (data.duration.includes("Excl. Fri") && todayName === "Friday") {
+                isDayValid = false;
+              } else if (todayName === "Saturday" || todayName === "Sunday") {
+                isDayValid = false;
+              } else {
+                isDayValid = true;
+              }
+            } else {
+              isDayValid = data.duration.includes(todayDateOnly) || data.duration === todayFormatted;
+            }
+
+            if (!isDayValid) {
+              resultDiv.innerHTML = `<span class="text-red-500">❌ WRONG DAY!<br>Ticket valid for: ${data.duration}</span>`;
+            } else if (data.last_scanned === todayStr) {
               resultDiv.innerHTML = `<span class="text-red-400">⚠️ ALREADY SCANNED TODAY!<br>${data.person_name} (${data.menu_choice})</span>`;
             } else {
               await supabaseClient.from('lunch_tickets').update({ last_scanned: todayStr }).eq('id', data.id);
@@ -268,15 +415,6 @@
     }
 
     async function loadAdminData() {
-      // 1. Calculate Yesterday Midnight (to safely delete expired Daily tickets)
-      const startOfYesterday = new Date();
-      startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-      startOfYesterday.setHours(0, 0, 0, 0); 
-      
-      // 2. Auto-delete ONLY 'Daily' tickets that were created before yesterday
-      await supabaseClient.from('lunch_tickets').delete().eq('duration', 'Daily').lt('created_at', startOfYesterday.toISOString());
-      
-      // 3. Fetch active roster
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
