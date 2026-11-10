@@ -13,8 +13,51 @@
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-4 font-sans">
 
-  <main id="main-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-    
+  <main id="login-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl hidden">
+    <div class="text-center mb-6 mt-4">
+      <div class="inline-block px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full mb-3">
+        OFFICE PORTAL
+      </div>
+      <h1 id="auth-title" class="text-2xl font-black text-white">Welcome Back</h1>
+      <p id="auth-subtitle" class="text-xs text-gray-400 mt-2">Sign in to book your office meals</p>
+    </div>
+
+    <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+
+      <div id="name-field-container" class="hidden">
+        <label class="text-xs text-gray-400 font-semibold block mb-1 text-left">Full Name</label>
+        <input type="text" id="auth-name" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+      </div>
+
+      <div id="email-field-container">
+        <label class="text-xs text-gray-400 font-semibold block mb-1 text-left">Email Address</label>
+        <input type="email" id="auth-email" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+      </div>
+
+      <div id="password-field-container">
+        <div class="flex justify-between items-center mb-1">
+          <label id="password-label" class="text-xs text-gray-400 font-semibold text-left">Password</label>
+          <button type="button" id="forgot-link" onclick="setAuthMode('forgot')" tabindex="-1" class="text-[10px] text-indigo-400 hover:underline font-bold">Forgot?</button>
+        </div>
+        <input type="password" id="auth-password" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+      </div>
+
+      <div id="auth-error" class="text-rose-400 text-[11px] font-bold text-center hidden"></div>
+      <div id="auth-success" class="text-emerald-400 text-[11px] font-bold text-center hidden"></div>
+
+      <button type="submit" id="auth-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 text-sm mt-4">
+        Sign In
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-xs text-gray-400">
+      <span id="auth-toggle-text">Don't have an account?</span>
+      <button type="button" onclick="handleToggle()" id="auth-toggle-btn" class="text-indigo-400 font-bold hover:underline ml-1">Sign Up</button>
+    </div>
+  </main>
+
+  <main id="main-card" class="relative bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl hidden">
+
     <button onclick="openAdminModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white p-2 text-xl z-10">
       ⚙️
     </button>
@@ -25,12 +68,17 @@
     <h1 class="text-2xl font-black mb-6">Book Your Meal</h1>
 
     <form id="lunch-form" onsubmit="submitOrder(event)" class="space-y-4">
-      <div>
-        <label class="text-xs text-gray-400 font-semibold block mb-1 text-left">Your Name</label>
-        <input type="text" id="user-name" required placeholder="Enter your name" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+
+      <div class="bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 flex justify-between items-center">
+        <div>
+          <div class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Logged In As</div>
+          <div id="display-logged-user" class="text-sm font-bold text-white truncate max-w-[150px]">--</div>
+        </div>
+        <button type="button" onclick="handleLogout()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg transition-colors">
+          Logout
+        </button>
       </div>
 
-      <!-- Meal Choice -->
       <div>
         <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Meal Preference</label>
         <div class="grid grid-cols-3 gap-2">
@@ -49,7 +97,6 @@
         </div>
       </div>
 
-      <!-- Dynamic Day / Duration Choice -->
       <div>
         <label class="text-xs text-gray-400 font-semibold block mb-2 text-left">Select Date or Weekly Pass</label>
         <div id="dynamic-days-container"></div>
@@ -60,39 +107,36 @@
       </button>
     </form>
 
-    <!-- GENERATED TICKET DISPLAY -->
     <div id="ticket-display" style="display: none;" class="flex flex-col items-center py-4">
       <div class="text-emerald-400 font-bold text-sm mb-1">✓ Booking Confirmed</div>
       <h2 id="ticket-name" class="text-xl font-black text-white">--</h2>
       <p id="ticket-meal" class="text-xs text-indigo-400 font-bold mb-1">--</p>
       <p id="ticket-duration" class="text-[10px] text-gray-400 font-bold mb-4 bg-gray-800 px-3 py-1 rounded-full text-center">--</p>
-      
+
       <div class="bg-white p-4 rounded-2xl shadow-xl mb-4" id="qrcode"></div>
       <p class="text-[11px] text-gray-400 text-center max-w-[220px]">
         Screenshot this QR code and show it at the lunch counter for verification.
       </p>
+      <button onclick="resetForm()" class="mt-4 text-xs text-indigo-400 underline">Book another meal</button>
     </div>
   </main>
 
-  <!-- ADMIN CONTROL & SCANNER MODAL -->
   <div id="admin-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 max-w-sm w-full max-h-[90vh] flex flex-col overflow-y-auto">
-      
-      <!-- PIN Screen -->
+
       <div id="pin-screen">
         <h3 class="text-lg font-bold mb-2">Enter Admin PIN</h3>
-        <input type="password" id="admin-pin" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-center text-xl tracking-widest mb-4 focus:outline-none focus:border-indigo-500" maxlength="4" placeholder="••••" />
+        <p class="text-xs text-gray-400 mb-4">Default PIN is 1234</p>
+        <input type="password" id="admin-pin" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-center text-xl tracking-widest mb-4 focus:outline-none focus:border-indigo-500" maxlength="4" />
         <button onclick="verifyPin()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold">Unlock Admin Panel</button>
       </div>
 
-      <!-- Admin Dashboard View -->
       <div id="controls-screen" class="hidden space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="font-bold text-lg">Admin Panel</h3>
           <button onclick="closeAdminModal()" class="text-gray-400 text-xl font-bold">✕</button>
         </div>
 
-        <!-- Main Navigation Tabs -->
         <div class="flex space-x-2 bg-gray-950 p-1 rounded-xl border border-gray-800 text-xs">
           <button type="button" onclick="switchAdminTab('scanner')" id="tab-btn-scanner" class="flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all">
             📷 Scanner
@@ -102,9 +146,7 @@
           </button>
         </div>
 
-        <!-- TAB 1: SCANNER & LIVE TODAY ROSTER -->
         <div id="admin-tab-scanner" class="space-y-4">
-          <!-- Camera Scanner Area -->
           <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800">
             <button id="start-scan-btn" onclick="startScanner()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mb-2">
               📷 Open Camera Scanner
@@ -113,7 +155,6 @@
             <div id="scan-result" class="mt-2 text-xs text-center font-bold"></div>
           </div>
 
-          <!-- Order Roster -->
           <div>
             <div class="flex justify-between items-center mb-2">
               <span class="text-xs text-gray-400 font-semibold">Active Roster</span>
@@ -125,9 +166,7 @@
           </div>
         </div>
 
-        <!-- TAB 2: DETAILED STATS WITH SUB-BUTTONS -->
         <div id="admin-tab-stats" class="hidden space-y-3">
-          <!-- Stats Sub-Navigation Toggle Buttons -->
           <div class="flex space-x-2 bg-gray-950 p-1 rounded-xl border border-gray-800 text-[11px]">
             <button type="button" onclick="switchStatsSubTab('prev-week')" id="subtab-btn-prev" class="flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all">
               ⬅️ Prev Week Stats
@@ -137,7 +176,6 @@
             </button>
           </div>
 
-          <!-- Prev Week Content View -->
           <div id="stats-sub-prev" class="hidden space-y-3">
             <div class="text-xs text-gray-400 font-semibold mb-1">Previous Week Breakdown (Mon-Fri)</div>
             <div id="stats-prev-week-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
@@ -145,7 +183,6 @@
             </div>
           </div>
 
-          <!-- This Week Content View -->
           <div id="stats-sub-this" class="space-y-3">
             <div class="text-xs text-gray-400 font-semibold mb-1">This Week Breakdown (Mon-Fri)</div>
             <div id="stats-this-week-container" class="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
@@ -160,51 +197,261 @@
   </div>
 
   <script>
-    // --- SUPABASE CREDENTIALS ---
     const SUPABASE_URL = "https://hkmlqympnmbxhsbnzlet.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ac1YInd8xN-k3FwZ_HDrPw_px_0qa5Z";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let html5QrcodeScanner = null;
-    const todayStr = new Date().toDateString(); 
+    let currentUser = null;
+    const todayStr = new Date().toDateString();
 
-    // --- CULT-STYLE DYNAMIC DATE & WEEK RENDERER ---
+    let authMode = 'signIn';
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const title = document.getElementById("auth-title");
+      const subtitle = document.getElementById("auth-subtitle");
+      const nameField = document.getElementById("name-field-container");
+      const emailField = document.getElementById("email-field-container");
+      const passField = document.getElementById("password-field-container");
+      const forgotLink = document.getElementById("forgot-link");
+      const passLabel = document.getElementById("password-label");
+      const passInput = document.getElementById("auth-password");
+      const btn = document.getElementById("auth-btn");
+      const toggleText = document.getElementById("auth-toggle-text");
+      const toggleBtn = document.getElementById("auth-toggle-btn");
+      const errorDiv = document.getElementById("auth-error");
+      const successDiv = document.getElementById("auth-success");
+
+      errorDiv.classList.add("hidden");
+      successDiv.classList.add("hidden");
+      passInput.value = "";
+
+      document.getElementById("auth-name").required = (mode === 'signUp');
+      document.getElementById("auth-email").required = (mode !== 'update');
+      document.getElementById("auth-password").required = (mode !== 'forgot');
+
+      if (mode === 'signIn') {
+        title.textContent = "Welcome Back";
+        subtitle.textContent = "Sign in to book your office meals";
+        nameField.classList.add("hidden");
+        emailField.classList.remove("hidden");
+        passField.classList.remove("hidden");
+        forgotLink.classList.remove("hidden");
+        btn.textContent = "Sign In";
+        toggleText.textContent = "Don't have an account?";
+        toggleBtn.textContent = "Sign Up";
+        passLabel.textContent = "Password";
+      } else if (mode === 'signUp') {
+        title.textContent = "Create Account";
+        subtitle.textContent = "Sign up to start booking meals";
+        nameField.classList.remove("hidden");
+        emailField.classList.remove("hidden");
+        passField.classList.remove("hidden");
+        forgotLink.classList.add("hidden");
+        btn.textContent = "Sign Up";
+        toggleText.textContent = "Already have an account?";
+        toggleBtn.textContent = "Sign In";
+        passLabel.textContent = "Password";
+      } else if (mode === 'forgot') {
+        title.textContent = "Reset Password";
+        subtitle.textContent = "Enter your email to receive a reset link";
+        nameField.classList.add("hidden");
+        emailField.classList.remove("hidden");
+        passField.classList.add("hidden");
+        forgotLink.classList.add("hidden");
+        btn.textContent = "Send Reset Link";
+        toggleText.textContent = "Remembered your password?";
+        toggleBtn.textContent = "Sign In";
+      } else if (mode === 'update') {
+        title.textContent = "Set New Password";
+        subtitle.textContent = "Please enter your new password below";
+        nameField.classList.add("hidden");
+        emailField.classList.add("hidden");
+        passField.classList.remove("hidden");
+        forgotLink.classList.add("hidden");
+        btn.textContent = "Update Password";
+        toggleText.textContent = "";
+        toggleBtn.textContent = "";
+        passLabel.textContent = "New Password";
+      }
+    }
+
+    function handleToggle() {
+      if (authMode === 'signIn') setAuthMode('signUp');
+      else if (authMode === 'signUp' || authMode === 'forgot') setAuthMode('signIn');
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById("auth-email").value;
+      const password = document.getElementById("auth-password").value;
+      const name = document.getElementById("auth-name").value;
+
+      const errorDiv = document.getElementById("auth-error");
+      const successDiv = document.getElementById("auth-success");
+      const btn = document.getElementById("auth-btn");
+
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      errorDiv.classList.add("hidden");
+      successDiv.classList.add("hidden");
+
+      try {
+        if (authMode === 'signUp') {
+          const { error } = await supabaseClient.auth.signUp({
+            email: email, password: password, options: { data: { full_name: name } }
+          });
+          if (error) throw error;
+        } else if (authMode === 'signIn') {
+          const { error } = await supabaseClient.auth.signInWithPassword({
+            email: email, password: password
+          });
+          if (error) throw error;
+        } else if (authMode === 'forgot') {
+          const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname,
+          });
+          if (error) throw error;
+          successDiv.textContent = "Password reset link sent to your email.";
+          successDiv.classList.remove("hidden");
+        } else if (authMode === 'update') {
+          const { error } = await supabaseClient.auth.updateUser({
+            password: password
+          });
+          if (error) throw error;
+
+          successDiv.textContent = "Password updated successfully!";
+          successDiv.classList.remove("hidden");
+
+          setTimeout(async () => {
+             setAuthMode('signIn');
+             const { data: { session } } = await supabaseClient.auth.getSession();
+             if (session) {
+               currentUser = session.user;
+               document.getElementById("display-logged-user").textContent = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+               document.getElementById("login-card").classList.add("hidden");
+               document.getElementById("main-card").classList.remove("hidden");
+               renderDynamicDays();
+               loadSavedChoices();
+               history.replaceState(null, '', window.location.pathname);
+             }
+          }, 1500);
+        }
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove("hidden");
+      } finally {
+        if (authMode !== 'update' || !errorDiv.classList.contains("hidden")) {
+          btn.disabled = false;
+          if (authMode === 'signUp') btn.textContent = "Sign Up";
+          else if (authMode === 'signIn') btn.textContent = "Sign In";
+          else if (authMode === 'forgot') btn.textContent = "Send Reset Link";
+          else if (authMode === 'update') btn.textContent = "Update Password";
+        }
+      }
+    }
+
+    async function handleLogout() {
+      await supabaseClient.auth.signOut();
+      resetForm();
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      const mainCard = document.getElementById("main-card");
+      const loginCard = document.getElementById("login-card");
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthMode('update');
+        mainCard.classList.add("hidden");
+        loginCard.classList.remove("hidden");
+        return;
+      }
+
+      if (session && authMode !== 'update') {
+        if (window.location.hash.includes('type=recovery')) return;
+
+        currentUser = session.user;
+        document.getElementById("display-logged-user").textContent = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+
+        loginCard.classList.add("hidden");
+        mainCard.classList.remove("hidden");
+
+        renderDynamicDays();
+        loadSavedChoices();
+      } else if (!session) {
+        currentUser = null;
+        mainCard.classList.add("hidden");
+        loginCard.classList.remove("hidden");
+        if (authMode === 'update') setAuthMode('signIn');
+      }
+    });
+
+    async function initAuth() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session && !window.location.hash.includes('type=recovery')) {
+        document.getElementById("login-card").classList.remove("hidden");
+      }
+    }
+
+    function loadSavedChoices() {
+      const savedChoice = localStorage.getItem("lunch_meal_choice");
+      const savedDuration = localStorage.getItem("lunch_duration_choice");
+
+      if (savedChoice) {
+        const radioBtn = document.querySelector(`input[name="meal-choice"][value="${savedChoice}"]`);
+        if (radioBtn) radioBtn.checked = true;
+      }
+      if (savedDuration) {
+        const durBtn = document.querySelector(`input[name="duration-choice"][value="${savedDuration}"]`);
+        if (durBtn) durBtn.checked = true;
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("lunch-form").style.display = "block";
+      document.getElementById("ticket-display").style.display = "none";
+      document.getElementById("qrcode").innerHTML = "";
+
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = false;
+      btn.textContent = "Generate Ticket";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!window.location.hash.includes('type=recovery')) {
+        setAuthMode('signIn');
+      }
+      initAuth();
+    });
+
     function renderDynamicDays() {
       const container = document.getElementById("dynamic-days-container");
       if (!container) return;
 
       const now = new Date();
       const currentHour = now.getHours();
-      const currentDayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
-      const isPastCutoff = currentHour >= 16; // 4:00 PM Cutoff
-      
-      const formatDate = (d) => {
-        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      };
-      const formatShortDate = (d) => {
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      };
+      const currentDayOfWeek = now.getDay();
+      const isPastCutoff = currentHour >= 16;
 
-      // 1. Single Day Pickers: capped at 4 upcoming valid weekdays
+      const formatDate = (d) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const formatShortDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
       let upcomingWeekdays = [];
       let cur = new Date(now);
       cur.setDate(cur.getDate() + 1);
 
-      // If today is past 4:00 PM, tomorrow's booking is closed, skip tomorrow
       if (isPastCutoff) {
         cur.setDate(cur.getDate() + 1);
       }
 
       while (upcomingWeekdays.length < 4) {
         const dayOfWeek = cur.getDay();
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          upcomingWeekdays.push(new Date(cur));
-        }
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) upcomingWeekdays.push(new Date(cur));
         cur.setDate(cur.getDate() + 1);
       }
 
       let html = "";
-
       if (isPastCutoff) {
         html += `
           <div class="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] mb-3 flex items-center space-x-2">
@@ -226,9 +473,7 @@
       });
       html += `</div>`;
 
-      // 2. Compute "This Week" & "Next Week" dates
       const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
-      
       let thisMon = new Date(now); thisMon.setDate(now.getDate() + diffToMon);
       let thisThu = new Date(thisMon); thisThu.setDate(thisMon.getDate() + 3);
       let thisFri = new Date(thisMon); thisFri.setDate(thisMon.getDate() + 4);
@@ -246,32 +491,27 @@
 
       html += `<div class="space-y-2 border-t border-gray-800 pt-3">`;
 
-      // --- DYNAMIC "THIS WEEK" STARTING DATE LOGIC ---
-      // Determine the first active bookable day for "This Week"
-      let startOffset = 0;
-      if (currentDayOfWeek >= 1 && currentDayOfWeek <= 4) {
-        startOffset = currentDayOfWeek; // e.g. Mon=1 -> Starts Tuesday (thisMon + 1)
-      }
+      let thisWeekStart = new Date(now);
+      thisWeekStart.setDate(thisWeekStart.getDate() + 1);
+      if (isPastCutoff) thisWeekStart.setDate(thisWeekStart.getDate() + 1);
 
-      let thisWeekStart = new Date(thisMon);
-      thisWeekStart.setDate(thisMon.getDate() + startOffset);
+      const startDow = thisWeekStart.getDay();
+      const startIdx = Math.round((thisWeekStart - thisMon) / (1000 * 60 * 60 * 24));
+      const startInThisWeek = startIdx >= 0 && startIdx <= 4;
+
+      const canBookExclFri = startInThisWeek && startDow >= 1 && startDow <= 4;
+      const canBookInclFri = startInThisWeek && startDow >= 1 && startDow <= 5;
+
       const thisStartStr = formatShortDate(thisWeekStart);
 
-      // "This Week" packages remain valid as long as there is at least 1 remaining day in the week
-      const hasDaysRemainingInThisWeek = (currentDayOfWeek === 0 || currentDayOfWeek === 6 || currentDayOfWeek < 4 || (currentDayOfWeek === 4 && !isPastCutoff));
-
-      if (hasDaysRemainingInThisWeek) {
-        const thisExclFriValue = (thisStartStr === thisThuStr)
-          ? `This Week (Excl. Fri: ${thisStartStr})`
-          : `This Week (Excl. Fri: ${thisStartStr} - ${thisThuStr})`;
-
-        const thisInclFriValue = (thisStartStr === thisFriStr)
-          ? `This Week (Incl. Fri: ${thisStartStr})`
-          : `This Week (Incl. Fri: ${thisStartStr} - ${thisFriStr})`;
-        
+      if (canBookExclFri || canBookInclFri) {
         html += `<div class="text-[11px] text-indigo-400 font-semibold mb-1">This Week Packages</div>`;
-        
-        if (currentDayOfWeek < 4 || (currentDayOfWeek === 0 || currentDayOfWeek === 6)) {
+
+        if (canBookExclFri) {
+          const thisExclFriValue = (thisStartStr === thisThuStr)
+            ? `This Week (Excl. Fri: ${thisStartStr})`
+            : `This Week (Excl. Fri: ${thisStartStr} - ${thisThuStr})`;
+
           html += `
             <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
               <input type="radio" name="duration-choice" value="${thisExclFriValue}" class="accent-indigo-500">
@@ -280,15 +520,20 @@
           `;
         }
 
-        html += `
-          <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
-            <input type="radio" name="duration-choice" value="${thisInclFriValue}" class="accent-indigo-500">
-            <span class="ml-3 text-xs font-semibold">${thisInclFriValue}</span>
-          </label>
-        `;
+        if (canBookInclFri) {
+          const thisInclFriValue = (thisStartStr === thisFriStr)
+            ? `This Week (Incl. Fri: ${thisStartStr})`
+            : `This Week (Incl. Fri: ${thisStartStr} - ${thisFriStr})`;
+
+          html += `
+            <label class="flex items-center p-3 bg-gray-950 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700">
+              <input type="radio" name="duration-choice" value="${thisInclFriValue}" class="accent-indigo-500">
+              <span class="ml-3 text-xs font-semibold">${thisInclFriValue}</span>
+            </label>
+          `;
+        }
       }
 
-      // "NEXT WEEK" PACKAGES: Available until FRIDAY 4:00 PM cutoff
       const isNextWeekCutoffPassed = (currentDayOfWeek === 5 && isPastCutoff) || currentDayOfWeek === 6 || (currentDayOfWeek === 0 && isPastCutoff);
 
       if (!isNextWeekCutoffPassed) {
@@ -315,77 +560,19 @@
       }
 
       html += `</div>`;
-
       container.innerHTML = html;
     }
-
-    // --- MAIN TAB SWITCHER LOGIC ---
-    function switchAdminTab(tab) {
-      const scannerTab = document.getElementById("admin-tab-scanner");
-      const statsTab = document.getElementById("admin-tab-stats");
-      const btnScanner = document.getElementById("tab-btn-scanner");
-      const btnStats = document.getElementById("tab-btn-stats");
-
-      if (tab === 'scanner') {
-        scannerTab.classList.remove("hidden");
-        statsTab.classList.add("hidden");
-        btnScanner.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
-        btnStats.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
-      } else {
-        scannerTab.classList.add("hidden");
-        statsTab.classList.remove("hidden");
-        btnStats.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
-        btnScanner.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
-      }
-    }
-
-    // --- STATS SUB-TAB SWITCHER LOGIC ---
-    function switchStatsSubTab(sub) {
-      const prevSub = document.getElementById("stats-sub-prev");
-      const thisSub = document.getElementById("stats-sub-this");
-      const btnPrev = document.getElementById("subtab-btn-prev");
-      const btnThis = document.getElementById("subtab-btn-this");
-
-      if (sub === 'prev-week') {
-        prevSub.classList.remove("hidden");
-        thisSub.classList.add("hidden");
-        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
-        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
-      } else {
-        prevSub.classList.add("hidden");
-        thisSub.classList.remove("hidden");
-        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
-        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
-      }
-    }
-
-    // --- AUTO-FILL MEMORY & INIT ---
-    document.addEventListener("DOMContentLoaded", () => {
-      renderDynamicDays();
-
-      const savedName = localStorage.getItem("lunch_user_name");
-      const savedChoice = localStorage.getItem("lunch_meal_choice");
-      const savedDuration = localStorage.getItem("lunch_duration_choice");
-
-      if (savedName) document.getElementById("user-name").value = savedName;
-      if (savedChoice) {
-        const radioBtn = document.querySelector(`input[name="meal-choice"][value="${savedChoice}"]`);
-        if (radioBtn) radioBtn.checked = true;
-      }
-      if (savedDuration) {
-        const durBtn = document.querySelector(`input[name="duration-choice"][value="${savedDuration}"]`);
-        if (durBtn) durBtn.checked = true;
-      }
-    });
 
     async function submitOrder(e) {
       e.preventDefault();
 
-      const name = document.getElementById("user-name").value.trim();
+      if (!currentUser) return alert("You must be logged in to book.");
+
+      const name = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
       const choice = document.querySelector('input[name="meal-choice"]:checked')?.value;
       const duration = document.querySelector('input[name="duration-choice"]:checked')?.value;
 
-      if (!name || !choice || !duration) return;
+      if (!choice || !duration) return;
 
       const now = new Date();
       if (now.getHours() >= 16) {
@@ -399,7 +586,6 @@
         }
       }
 
-      localStorage.setItem("lunch_user_name", name);
       localStorage.setItem("lunch_meal_choice", choice);
       localStorage.setItem("lunch_duration_choice", duration);
 
@@ -429,8 +615,46 @@
       }
     }
 
+    function switchAdminTab(tab) {
+      const scannerTab = document.getElementById("admin-tab-scanner");
+      const statsTab = document.getElementById("admin-tab-stats");
+      const btnScanner = document.getElementById("tab-btn-scanner");
+      const btnStats = document.getElementById("tab-btn-stats");
+
+      if (tab === 'scanner') {
+        scannerTab.classList.remove("hidden");
+        statsTab.classList.add("hidden");
+        btnScanner.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnStats.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      } else {
+        scannerTab.classList.add("hidden");
+        statsTab.classList.remove("hidden");
+        btnStats.className = "flex-1 py-2 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnScanner.className = "flex-1 py-2 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      }
+    }
+
+    function switchStatsSubTab(sub) {
+      const prevSub = document.getElementById("stats-sub-prev");
+      const thisSub = document.getElementById("stats-sub-this");
+      const btnPrev = document.getElementById("subtab-btn-prev");
+      const btnThis = document.getElementById("subtab-btn-this");
+
+      if (sub === 'prev-week') {
+        prevSub.classList.remove("hidden");
+        thisSub.classList.add("hidden");
+        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      } else {
+        prevSub.classList.add("hidden");
+        thisSub.classList.remove("hidden");
+        btnThis.className = "flex-1 py-1.5 font-bold rounded-lg bg-indigo-600 text-white transition-all";
+        btnPrev.className = "flex-1 py-1.5 font-bold rounded-lg text-gray-400 hover:text-white transition-all";
+      }
+    }
+
     function openAdminModal() { document.getElementById("admin-modal").classList.remove("hidden"); }
-    
+
     async function closeAdminModal() {
       if (html5QrcodeScanner) {
         try {
@@ -446,7 +670,7 @@
 
     async function verifyPin() {
       const pin = document.getElementById("admin-pin").value;
-      if (pin === "1234") { 
+      if (pin === "1234") {
         document.getElementById("pin-screen").classList.add("hidden");
         document.getElementById("controls-screen").classList.remove("hidden");
         await loadAdminData();
@@ -513,7 +737,6 @@
       const { data } = await supabaseClient.from('lunch_tickets').select('*').order('created_at', { ascending: false });
 
       if (data) {
-        // --- 1. RENDER TODAY SCANNER TAB DATA ---
         const nameList = document.getElementById("name-list");
         nameList.innerHTML = "";
 
@@ -538,12 +761,11 @@
           nameList.appendChild(row);
         });
 
-        // --- 2. CALCULATE PREV WEEK & THIS WEEK DATES ---
         const now = new Date();
         const currentDayOfWeek = now.getDay();
         const diffToMon = (currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek);
-        
-        let thisMon = new Date(now); 
+
+        let thisMon = new Date(now);
         thisMon.setDate(now.getDate() + diffToMon);
         thisMon.setHours(0,0,0,0);
 
